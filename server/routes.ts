@@ -8,91 +8,16 @@ import path from "path";
 import fs from "fs";
 import { spawn } from "child_process";
 import express from "express";
-import { OpenAI } from "openai";
 
-let _openai: OpenAI | null = null;
-function getOpenAI(): OpenAI {
-  if (!_openai) {
-    _openai = new OpenAI({
-      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || "",
-      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-    });
-  }
-  return _openai;
-}
-
-// Configure multer for file uploads
 const upload = multer({
   dest: "uploads/",
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 10 * 1024 * 1024,
   },
 });
 
-// Ensure uploads directory exists
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads");
-}
-
-async function classifyWithAI(imagePath: string): Promise<{ shape: string; color: string; category: string; reason: string }> {
-  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OpenAI API key not configured. Falling back to OpenCV.");
-  }
-  try {
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString("base64");
-
-    const response = await getOpenAI().chat.completions.create({
-      model: "gpt-5.2",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Analyze the object in this image (could be a 2D shape or a 3D real-world object from a mobile camera). 
-              
-              DETECTION GUIDELINES:
-              1. Circle/Sphere/Torus -> Container 1. Round, circular, or ring-like profiles with NO sharp corners.
-              2. Square/Cube -> Container 2. 4 equal sides with 90-degree corners.
-              3. Triangle/Pyramid/Rectangle -> Container 3. 3 sides OR 4 unequal sides (like a laptop or phone).
-              4. Other -> Container 4. Stars, hexagons, or complex industrial parts.
-              
-              CRITICAL: Be extremely precise. A triangle is NOT a circle. If you see sharp corners or straight edges that meet at an angle, it is NOT a circle.
-              
-              Respond ONLY with a JSON object like this: 
-              {"shape": "Circle", "color": "Red", "container": "1", "reason": "The object is a red round part with no vertices."}`,
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-              },
-            },
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) throw new Error("Empty AI response");
-    
-    // Robust JSON parsing: strip potential markdown code blocks
-    const cleanJson = content.replace(/^```json\n?/, "").replace(/\n?```$/, "").trim();
-    const result = JSON.parse(cleanJson);
-    
-    return {
-      shape: result.shape || "Other",
-      color: result.color || "Unknown",
-      category: result.container || "4",
-      reason: result.reason || "Processed by AI vision system.",
-    };
-  } catch (error) {
-    console.error("AI classification error:", error);
-    throw error;
-  }
 }
 
 async function classifyWithOpenCV(imagePath: string): Promise<{ shape: string; color: string; category: string; reason: string }> {
@@ -106,27 +31,22 @@ async function classifyWithOpenCV(imagePath: string): Promise<{ shape: string; c
 
     pythonProcess.on("close", (code) => {
       if (code !== 0) {
+        console.error("OpenCV stderr:", errorString);
         return reject(new Error(`OpenCV process failed: ${errorString}`));
       }
       try {
-        const result = JSON.parse(dataString);
+        const result = JSON.parse(dataString.trim());
         if (result.error) return reject(new Error(result.error));
 
-        // Map shape to container number (Circle=1, Square=2, Triangle/Rectangle=3, Other=4)
-        let containerNumber = "4"; 
-        const shape = result.detected_shape;
-        if (shape === "Circle") containerNumber = "1";
-        else if (shape === "Square") containerNumber = "2";
-        else if (shape === "Triangle" || shape === "Rectangle") containerNumber = "3";
-
         resolve({
-          shape: shape,
-          color: result.color && result.color !== "Unknown" ? result.color : "Detected",
-          category: containerNumber,
+          shape: result.detected_shape || "Other",
+          color: result.color || "Unknown",
+          category: result.container || "4",
           reason: result.confidence || "Processed using local computer vision."
         });
       } catch (e) {
-        reject(e);
+        console.error("Failed to parse OpenCV output:", dataString);
+        reject(new Error("Failed to parse detection result"));
       }
     });
   });
@@ -160,29 +80,21 @@ export async function registerRoutes(
     }
 
     try {
-      let classification;
-      let engine = "AI Vision";
-      try {
-        classification = await classifyWithAI(newPath);
-      } catch (aiError) {
-        console.warn("AI failed, falling back to OpenCV:", aiError);
-        classification = await classifyWithOpenCV(newPath);
-        engine = "OpenCV (Fallback)";
-      }
+      const classification = await classifyWithOpenCV(newPath);
 
       const stored = await storage.createClassification({
         imageUrl: `/uploads/${newFilename}`,
         detectedShape: classification.shape,
         detectedColor: classification.color,
-        category: classification.category, // This now stores the container number (1, 2, 3, 4)
+        category: classification.category,
         reason: classification.reason,
-        confidence: engine
+        confidence: "OpenCV Local Detection"
       });
 
       res.status(201).json(stored);
     } catch (error) {
       console.error("Classification error:", error);
-      res.status(500).json({ message: "Processing failed" });
+      res.status(500).json({ message: "Processing failed. Please try a clearer image." });
     }
   });
 

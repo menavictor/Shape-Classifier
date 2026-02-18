@@ -86,7 +86,7 @@ export default function Home() {
               </h1>
               <p className="text-muted-foreground text-base md:text-lg max-w-xl">
                 Upload product images for instant shape detection and container assignment. 
-                Powered by AI Vision analysis.
+                Powered by local OpenCV computer vision — no external APIs needed.
               </p>
             </div>
             
