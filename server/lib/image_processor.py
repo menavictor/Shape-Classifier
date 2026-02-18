@@ -35,29 +35,30 @@ def analyze_shape(image_path):
 
     # Detect color
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    
+    # Simple sampling of the center area for color
     center_y, center_x = img.shape[0] // 2, img.shape[1] // 2
-    # Sample a larger region around the center to be more robust
-    h_margin, w_margin = img.shape[0] // 10, img.shape[1] // 10
+    h_margin, w_margin = img.shape[0] // 6, img.shape[1] // 6
     sample = hsv[max(0, center_y-h_margin):min(img.shape[0], center_y+h_margin), 
                  max(0, center_x-w_margin):min(img.shape[1], center_x+w_margin)]
-    
+
     if sample.size > 0:
         avg_hsv = np.mean(sample, axis=(0, 1))
         h, s, v = avg_hsv
 
-        if s < 40:
+        if s < 30:
             if v > 200: color = "White"
             elif v < 50: color = "Black"
             else: color = "Gray"
         else:
-            if (h < 10 or h > 165): color = "Red"
+            if (h < 10 or h > 160): color = "Red"
             elif 10 <= h < 35: color = "Yellow"
             elif 35 <= h < 85: color = "Green"
             elif 85 <= h < 135: color = "Blue"
-            elif 135 <= h < 165: color = "Purple"
+            elif 135 <= h < 160: color = "Purple"
     else:
         color = "Unknown"
-
+        
     shape = "Other"
     confidence_msg = "No distinct shape found"
 
