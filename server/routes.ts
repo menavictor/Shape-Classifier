@@ -44,7 +44,7 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
     const base64Image = imageBuffer.toString("base64");
 
     const response = await getOpenAI().chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5.2",
       messages: [
         {
           role: "user",
@@ -59,7 +59,7 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
               3. Triangle/Pyramid/Rectangle -> Container 3. 3 sides OR 4 unequal sides (like a laptop or phone).
               4. Other -> Container 4. Stars, hexagons, or complex industrial parts.
               
-              CRITICAL: Be extremely precise. Do NOT confuse a Triangle (sharp corners) with a Circle.
+              CRITICAL: Be extremely precise. A triangle is NOT a circle. If you see sharp corners or straight edges that meet at an angle, it is NOT a circle.
               
               Respond ONLY with a JSON object like this: 
               {"shape": "Circle", "color": "Red", "container": "1", "reason": "The object is a red round part with no vertices."}`,
