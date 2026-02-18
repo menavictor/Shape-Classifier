@@ -79,7 +79,10 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
     const content = response.choices[0].message.content;
     if (!content) throw new Error("Empty AI response");
     
-    const result = JSON.parse(content);
+    // Robust JSON parsing: strip potential markdown code blocks
+    const cleanJson = content.replace(/^```json\n?/, "").replace(/\n?```$/, "").trim();
+    const result = JSON.parse(cleanJson);
+    
     return {
       shape: result.shape || "Other",
       color: result.color || "Unknown",
