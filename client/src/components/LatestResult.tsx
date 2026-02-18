@@ -65,11 +65,11 @@ export function LatestResult({ result }: LatestResultProps) {
             <h4 className="text-sm font-medium text-muted-foreground">Assigned Container</h4>
             <div className="flex items-center gap-4 p-4 rounded-xl bg-secondary/50 border border-border">
               <div className={cn("w-12 h-12 rounded-lg shadow-lg flex items-center justify-center text-white", containerBg)}>
-                <Box className="w-6 h-6" />
+                <span className="text-xl font-bold">{result.category}</span>
               </div>
               <div>
-                <div className="text-lg font-bold">{result.containerColor} Container</div>
-                <div className="text-xs text-muted-foreground">Automated Sorting Logic</div>
+                <div className="text-lg font-bold">Container {result.category}</div>
+                <div className="text-xs text-muted-foreground">{result.detectedShape} Sorting Logic</div>
               </div>
               <ArrowRight className="ml-auto w-5 h-5 text-muted-foreground/50" />
             </div>

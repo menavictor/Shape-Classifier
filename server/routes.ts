@@ -104,10 +104,18 @@ async function classifyWithOpenCV(imagePath: string): Promise<{ shape: string; c
       try {
         const result = JSON.parse(dataString);
         if (result.error) return reject(new Error(result.error));
+
+        // Map shape to container number
+        let containerNumber = "4"; // Default for Other
+        const shape = result.detected_shape;
+        if (shape === "Circle") containerNumber = "1";
+        else if (shape === "Square") containerNumber = "2";
+        else if (shape === "Triangle") containerNumber = "3";
+
         resolve({
-          shape: result.detected_shape,
+          shape: shape,
           color: result.color || "Unknown",
-          category: result.color || "General",
+          category: containerNumber, // Using category field to store container number
           reason: result.confidence || "Processed using local computer vision."
         });
       } catch (e) {

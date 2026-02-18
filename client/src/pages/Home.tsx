@@ -168,17 +168,10 @@ export default function Home() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <span 
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{ 
-                                backgroundColor: 
-                                  item.detectedColor === 'Green' ? 'var(--container-green)' :
-                                  item.detectedColor === 'Blue' ? 'var(--container-blue)' :
-                                  item.detectedColor === 'Yellow' || item.detectedColor === 'Orange/Yellow' ? 'var(--container-yellow)' :
-                                  item.detectedColor === 'Red' ? 'var(--container-red)' : 'gray'
-                              }}
-                            />
-                            <span className="font-medium">{item.detectedColor}</span>
+                            <div className="w-8 h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-primary">
+                              {item.category}
+                            </div>
+                            <span className="font-medium">Container {item.category}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-xs text-muted-foreground max-w-xs truncate">
