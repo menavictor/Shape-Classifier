@@ -71,10 +71,10 @@ export default function Home() {
         <section className="grid lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-5 space-y-6">
             <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
                 Automated Shape Classification
               </h1>
-              <p className="text-muted-foreground text-lg">
+              <p className="text-muted-foreground text-base md:text-lg max-w-xl">
                 Upload product images for instant shape detection and container assignment. 
                 Powered by OpenCV geometry analysis.
               </p>
@@ -83,7 +83,7 @@ export default function Home() {
             <Dropzone onFileSelect={handleFileSelect} isProcessing={isUploading} />
           </div>
 
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7 w-full overflow-hidden">
              {latestClassification ? (
                <div className="space-y-4">
                  <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -93,7 +93,7 @@ export default function Home() {
                  <LatestResult result={latestClassification} />
                </div>
              ) : (
-               <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-muted/20 border-2 border-dashed border-muted rounded-2xl p-8 text-center">
+               <div className="h-full min-h-[300px] md:min-h-[400px] flex flex-col items-center justify-center bg-muted/20 border-2 border-dashed border-muted rounded-2xl p-6 md:p-8 text-center">
                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                    <LayoutDashboard className="w-8 h-8 text-muted-foreground" />
                  </div>
@@ -116,75 +116,77 @@ export default function Home() {
           </div>
 
           <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-medium border-b border-border">
-                  <tr>
-                    <th className="px-6 py-4 w-[100px]">Image</th>
-                    <th className="px-6 py-4">Shape</th>
-                    <th className="px-6 py-4">Color</th>
-                    <th className="px-6 py-4">Container</th>
-                    <th className="px-6 py-4">Details</th>
-                    <th className="px-6 py-4 text-right">Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {isLoading ? (
+            <div className="overflow-x-auto -mx-4 md:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                <table className="min-w-full text-sm text-left">
+                  <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-medium border-b border-border">
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                        <div className="flex items-center justify-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" /> Loading records...
-                        </div>
-                      </td>
+                      <th className="px-4 md:px-6 py-4 w-[80px] md:w-[100px]">Image</th>
+                      <th className="px-4 md:px-6 py-4">Shape</th>
+                      <th className="px-4 md:px-6 py-4 hidden sm:table-cell">Color</th>
+                      <th className="px-4 md:px-6 py-4">Container</th>
+                      <th className="px-4 md:px-6 py-4 hidden lg:table-cell">Details</th>
+                      <th className="px-4 md:px-6 py-4 text-right">Time</th>
                     </tr>
-                  ) : classifications?.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                        No classifications yet. Upload an image to start.
-                      </td>
-                    </tr>
-                  ) : (
-                    classifications?.map((item) => (
-                      <motion.tr 
-                        key={item.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="group hover:bg-muted/30 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="w-12 h-12 rounded-lg bg-white border border-border overflow-hidden relative">
-                             <img 
-                               src={item.imageUrl} 
-                               alt="Thumb" 
-                               className="w-full h-full object-cover"
-                             />
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" /> Loading...
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <ShapeBadge shape={item.detectedShape} />
+                      </tr>
+                    ) : classifications?.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                          No records found.
                         </td>
-                        <td className="px-6 py-4 font-medium">
-                          {item.detectedColor}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-primary">
-                              {item.category}
+                      </tr>
+                    ) : (
+                      classifications?.map((item) => (
+                        <motion.tr 
+                          key={item.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="group hover:bg-muted/30 transition-colors"
+                        >
+                          <td className="px-4 md:px-6 py-4">
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-white border border-border overflow-hidden relative">
+                               <img 
+                                 src={item.imageUrl} 
+                                 alt="Thumb" 
+                                 className="w-full h-full object-cover"
+                               />
                             </div>
-                            <span className="font-medium">Container {item.category}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-muted-foreground max-w-xs truncate">
-                          {item.reason}
-                        </td>
-                        <td className="px-6 py-4 text-right text-muted-foreground font-mono text-xs">
-                          {new Date(item.createdAt || "").toLocaleString()}
-                        </td>
-                      </motion.tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="px-4 md:px-6 py-4">
+                            <ShapeBadge shape={item.detectedShape} />
+                          </td>
+                          <td className="px-4 md:px-6 py-4 font-medium hidden sm:table-cell">
+                            {item.detectedColor}
+                          </td>
+                          <td className="px-4 md:px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 md:w-8 md:h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-primary text-xs md:text-sm">
+                                {item.category}
+                              </div>
+                              <span className="font-medium hidden xs:inline">C{item.category}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 md:px-6 py-4 text-xs text-muted-foreground max-w-[150px] md:max-w-xs truncate hidden lg:table-cell">
+                            {item.reason}
+                          </td>
+                          <td className="px-4 md:px-6 py-4 text-right text-muted-foreground font-mono text-[10px] md:text-xs">
+                            {new Date(item.createdAt || "").toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </section>
