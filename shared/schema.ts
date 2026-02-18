@@ -1,25 +1,22 @@
-
-import { pgTable, text, serial, timestamp, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const classifications = pgTable("classifications", {
-  id: serial("id").primaryKey(),
-  imageUrl: text("image_url").notNull(),
-  detectedShape: varchar("detected_shape", { length: 50 }).notNull(),
-  detectedColor: varchar("detected_color", { length: 50 }).notNull(),
-  category: varchar("category", { length: 100 }).notNull(),
-  reason: text("reason").notNull(),
-  confidence: text("confidence"),
-  createdAt: timestamp("created_at").defaultNow(),
+export const classificationSchema = z.object({
+  id: z.number(),
+  imageUrl: z.string(),
+  detectedShape: z.string(),
+  detectedColor: z.string(),
+  category: z.string(),
+  reason: z.string(),
+  confidence: z.string().nullable(),
+  createdAt: z.date().or(z.string()),
 });
 
-export const insertClassificationSchema = createInsertSchema(classifications).omit({ 
+export const insertClassificationSchema = classificationSchema.omit({ 
   id: true, 
   createdAt: true 
 });
 
-export type Classification = typeof classifications.$inferSelect;
+export type Classification = z.infer<typeof classificationSchema>;
 export type InsertClassification = z.infer<typeof insertClassificationSchema>;
 
 export * from "./models/chat";
