@@ -11,7 +11,6 @@ import express from "express";
 import { OpenAI } from "openai";
 
 // Replit AI integration for OpenAI
-// Use gpt-4o for best vision capabilities
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -30,20 +29,27 @@ if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads");
 }
 
-async function classifyWithAI(imagePath: string): Promise<{ shape: string; color: string; confidence: string }> {
+async function classifyWithAI(imagePath: string): Promise<{ shape: string; color: string; category: string; reason: string }> {
   try {
     const imageBuffer = fs.readFileSync(imagePath);
     const base64Image = imageBuffer.toString("base64");
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Upgraded to gpt-4o for better vision
+      model: "gpt-4o",
       messages: [
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Analyze the main object in this image and classify its primary geometric shape as one of these: 'Circle', 'Square', 'Triangle', or 'Other'. Respond ONLY with a JSON object like this: {\"shape\": \"Circle\", \"color\": \"Green\", \"reason\": \"brief explanation\"}. Mapping: Circle->Green, Square->Blue, Triangle->Yellow, Other->Red.",
+              text: `Analyze the main object in this image. 
+              1. Detect its primary geometric shape ('Circle', 'Square', 'Triangle', or 'Other').
+              2. Detect its primary color.
+              3. Assign it to a business category (e.g., 'Electronics', 'Mechanical Parts', 'Packaging', 'Household').
+              4. Provide a professional reason for this classification.
+              
+              Respond ONLY with a JSON object like this: 
+              {"shape": "Circle", "color": "Red", "category": "Mechanical Parts", "reason": "The object is a red industrial washer with a clear circular profile."}`,
             },
             {
               type: "image_url",
@@ -63,8 +69,9 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
     const result = JSON.parse(content);
     return {
       shape: result.shape || "Other",
-      color: result.color || "Red",
-      confidence: `AI analysis: ${result.reason || "Processed by GPT-4o"}`,
+      color: result.color || "Unknown",
+      category: result.category || "General",
+      reason: result.reason || "Processed by AI vision system.",
     };
   } catch (error) {
     console.error("AI classification error:", error);
@@ -72,7 +79,7 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
   }
 }
 
-async function classifyWithOpenCV(imagePath: string): Promise<{ shape: string; color: string; confidence: string }> {
+async function classifyWithOpenCV(imagePath: string): Promise<{ shape: string; color: string; category: string; reason: string }> {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn("python3", ["server/lib/image_processor.py", imagePath]);
     let dataString = "";
@@ -90,8 +97,9 @@ async function classifyWithOpenCV(imagePath: string): Promise<{ shape: string; c
         if (result.error) return reject(new Error(result.error));
         resolve({
           shape: result.detected_shape,
-          color: result.container_color,
-          confidence: result.confidence
+          color: "Detected via CV",
+          category: "General",
+          reason: result.confidence || "Processed using local computer vision."
         });
       } catch (e) {
         reject(e);
@@ -128,8 +136,6 @@ export async function registerRoutes(
     }
 
     try {
-      // Primary: AI Analysis (requested for better accuracy)
-      // Fallback: OpenCV logic
       let classification;
       try {
         classification = await classifyWithAI(newPath);
@@ -141,8 +147,10 @@ export async function registerRoutes(
       const stored = await storage.createClassification({
         imageUrl: `/uploads/${newFilename}`,
         detectedShape: classification.shape,
-        containerColor: classification.color,
-        confidence: classification.confidence
+        detectedColor: classification.color,
+        category: classification.category,
+        reason: classification.reason,
+        confidence: "Processed"
       });
 
       res.status(201).json(stored);
