@@ -39,7 +39,13 @@ export function useUploadClassification() {
       return api.classifications.create.responses[201].parse(await res.json());
     },
     onSuccess: (newClassification) => {
-      // Invalidate list to show new item
+      // Optimistically update the list to show the new item immediately
+      queryClient.setQueryData([api.classifications.list.path], (old: Classification[] | undefined) => {
+        if (!old) return [newClassification];
+        // Filter out any temporary or duplicate IDs if necessary, though newClassification should be authoritative
+        return [newClassification, ...old];
+      });
+      // Still invalidate to ensure synchronization with server state
       queryClient.invalidateQueries({ queryKey: [api.classifications.list.path] });
     },
   });
