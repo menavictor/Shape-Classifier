@@ -16,10 +16,12 @@ export default function Home() {
   const latestClassification = classifications?.[0]; 
 
   const handleFileSelect = async (file: File) => {
+    // 1. Create immediate local preview URL
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
 
     try {
+      // 2. Start the upload/analysis
       await uploadImage(file);
       toast({
         title: "Analysis Complete",
@@ -32,9 +34,12 @@ export default function Home() {
         description: error instanceof Error ? error.message : "Failed to upload",
         variant: "destructive",
       });
-    } finally {
-      URL.revokeObjectURL(objectUrl);
+      // Clear preview if upload fails
       setPreviewUrl(null);
+    } finally {
+      // Note: We don't revoke immediately here because LatestResult needs it to stay visible
+      // until the real imageUrl from the server takes over or is shown.
+      // But we can clean up after a small delay or when the next upload starts.
     }
   };
 
