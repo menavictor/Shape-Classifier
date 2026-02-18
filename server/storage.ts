@@ -1,6 +1,7 @@
 
 import { db } from "./db";
 import { classifications, type Classification, type InsertClassification } from "@shared/schema";
+import { desc } from "drizzle-orm";
 
 export interface IStorage {
   getClassifications(): Promise<Classification[]>;
@@ -9,7 +10,7 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getClassifications(): Promise<Classification[]> {
-    return await db.select().from(classifications).orderBy(classifications.createdAt);
+    return await db.select().from(classifications).orderBy(desc(classifications.createdAt));
   }
 
   async createClassification(insertClassification: InsertClassification): Promise<Classification> {
