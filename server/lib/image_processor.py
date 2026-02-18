@@ -36,23 +36,27 @@ def analyze_shape(image_path):
     # Detect color
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     center_y, center_x = img.shape[0] // 2, img.shape[1] // 2
-    # Sample a small region in the center
-    sample = hsv[max(0, center_y-10):min(img.shape[0], center_y+10), 
-                 max(0, center_x-10):min(img.shape[1], center_x+10)]
-    avg_hsv = np.mean(sample, axis=(0, 1))
-    h, s, v = avg_hsv
+    # Sample a larger region around the center to be more robust
+    h_margin, w_margin = img.shape[0] // 10, img.shape[1] // 10
+    sample = hsv[max(0, center_y-h_margin):min(img.shape[0], center_y+h_margin), 
+                 max(0, center_x-w_margin):min(img.shape[1], center_x+w_margin)]
+    
+    if sample.size > 0:
+        avg_hsv = np.mean(sample, axis=(0, 1))
+        h, s, v = avg_hsv
 
-    color = "Other"
-    if s < 30:
-        if v > 200: color = "White"
-        elif v < 50: color = "Black"
-        else: color = "Gray"
+        if s < 40:
+            if v > 200: color = "White"
+            elif v < 50: color = "Black"
+            else: color = "Gray"
+        else:
+            if (h < 10 or h > 165): color = "Red"
+            elif 10 <= h < 35: color = "Yellow"
+            elif 35 <= h < 85: color = "Green"
+            elif 85 <= h < 135: color = "Blue"
+            elif 135 <= h < 165: color = "Purple"
     else:
-        if (h < 10 or h > 170): color = "Red"
-        elif 10 <= h < 35: color = "Orange/Yellow"
-        elif 35 <= h < 85: color = "Green"
-        elif 85 <= h < 130: color = "Blue"
-        elif 130 <= h < 170: color = "Purple"
+        color = "Unknown"
 
     shape = "Other"
     confidence_msg = "No distinct shape found"

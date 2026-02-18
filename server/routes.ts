@@ -106,8 +106,8 @@ async function classifyWithOpenCV(imagePath: string): Promise<{ shape: string; c
         if (result.error) return reject(new Error(result.error));
         resolve({
           shape: result.detected_shape,
-          color: "Detected via CV",
-          category: "General",
+          color: result.color || "Unknown",
+          category: result.color || "General",
           reason: result.confidence || "Processed using local computer vision."
         });
       } catch (e) {
