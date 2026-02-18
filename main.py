@@ -22,13 +22,27 @@ def _start_node():
     env = {**os.environ, "PORT": str(NODE_PORT)}
     cwd = os.path.dirname(os.path.abspath(__file__))
 
-    if os.environ.get("NODE_ENV") == "production":
+    if os.environ.get("NODE_ENV") == "production" or os.path.exists("dist/index.cjs"):
         cmd = ["node", "dist/index.cjs"]
     else:
         env["NODE_ENV"] = "development"
         cmd = ["npx", "tsx", "server/index.ts"]
 
+    # Wait for node to be ready
+    import time
+    max_retries = 30
+    ready = False
+    
     node_process = subprocess.Popen(cmd, env=env, cwd=cwd)
+    
+    for _ in range(max_retries):
+        if _is_port_in_use(NODE_PORT):
+            ready = True
+            break
+        time.sleep(1)
+    
+    if not ready:
+        print(f"Warning: Node.js server not started on port {NODE_PORT} after {max_retries} seconds")
 
 
 def _stop_node():
