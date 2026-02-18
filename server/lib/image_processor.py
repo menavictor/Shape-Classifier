@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 import sys
@@ -13,18 +12,18 @@ def analyze_shape(image_path):
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # 1. Circle Detection using HoughCircles (optimized for speed)
-    blurred = cv2.GaussianBlur(gray, (7, 7), 0)
+    # 1. Circle Detection using HoughCircles (Strict parameters to avoid false positives)
+    blurred = cv2.GaussianBlur(gray, (9, 9), 0)
     
-    # Adjusted parameters for faster and smarter circle detection
+    # Increased param2 and minDist to filter out noise and small textures
     circles = cv2.HoughCircles(
         blurred, 
         cv2.HOUGH_GRADIENT, 
         dp=1.2, 
-        minDist=60,
-        param1=40, 
-        param2=25, 
-        minRadius=15, 
+        minDist=100,
+        param1=50, 
+        param2=45, 
+        minRadius=25, 
         maxRadius=0
     )
 
@@ -63,11 +62,31 @@ def analyze_shape(image_path):
     confidence_msg = "No distinct shape found"
 
     if circles is not None:
-        # HoughCircles is very strong evidence for a circle
-        shape = "Circle"
-        color = "Green"
-        confidence_msg = f"HoughCircles detected {len(circles[0])} circle(s)"
-    elif contours:
+        # Check if circle detection is likely a false positive by verifying contour circularity
+        if contours:
+            largest_contour = max(contours, key=cv2.contourArea)
+            area = cv2.contourArea(largest_contour)
+            peri = cv2.arcLength(largest_contour, True)
+            if peri > 0:
+                circularity = (4 * np.pi * area) / (peri * peri)
+                # Strict circularity requirement for circles (triangles are ~0.6, squares ~0.78)
+                if circularity > 0.85:
+                    shape = "Circle"
+                    color = "Green"
+                    confidence_msg = f"HoughCircles confirmed by circularity ({circularity:.2f})"
+                else:
+                    # Circularity too low, likely a polygon.
+                    pass
+            else:
+                shape = "Circle"
+                color = "Green"
+                confidence_msg = f"HoughCircles detected {len(circles[0])} circle(s)"
+        else:
+            shape = "Circle"
+            color = "Green"
+            confidence_msg = f"HoughCircles detected {len(circles[0])} circle(s)"
+
+    if shape == "Other" and contours:
         largest_contour = max(contours, key=cv2.contourArea)
         area = cv2.contourArea(largest_contour)
         peri = cv2.arcLength(largest_contour, True)
@@ -80,12 +99,17 @@ def analyze_shape(image_path):
             approx = cv2.approxPolyDP(largest_contour, 0.03 * peri, True)
             num_vertices = len(approx)
             
-            # Lowered circularity threshold and increased vertex tolerance for circles
-            if circularity > 0.8 or num_vertices > 8:
+            # Use circularity and vertex count for robust classification
+            if circularity > 0.85 or num_vertices > 8:
                 shape = "Circle"
                 color = "Green"
                 confidence_msg = f"Contour circularity: {circularity:.2f}, Vertices: {num_vertices}"
-            elif 4 <= num_vertices <= 4:
+            elif 3 <= num_vertices <= 4 and circularity < 0.8:
+                # Triangles and Rectangles (Category 3)
+                shape = "Triangle"
+                color = "Yellow"
+                confidence_msg = f"Polygon profile detected (Vertices: {num_vertices}, Circ: {circularity:.2f})"
+            elif num_vertices == 4:
                 x, y, w, h = cv2.boundingRect(approx)
                 aspect_ratio = float(w)/h if h > 0 else 0
                 solidity = float(area) / (w * h) if (w * h) > 0 else 0

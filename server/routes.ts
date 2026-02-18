@@ -52,15 +52,17 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
             {
               type: "text",
               text: `Analyze the object in this image (could be a 2D shape or a 3D real-world object from a mobile camera). 
-              1. Detect its primary geometric profile or 3D shape ('Circle/Sphere/Torus', 'Square/Cube', 'Triangle/Pyramid', or 'Other').
-              2. Detect its primary color.
-              3. Assign it to a container number: 1 for Circle/Sphere/Torus (any circular, round, or ring-like profile), 2 for Square/Cube/Box, 3 for Triangle/Pyramid/Rectangle, 4 for Other.
-              4. Provide a professional reason for this classification based on its visual features.
               
               DETECTION GUIDELINES:
-              - A donut, ring, or torus should be classified as "Circle" and assigned to container 1.
-              - Real-world objects (like a laptop, book, or box) should be mapped to their closest geometric equivalent (e.g., Square/Cube for a box, Rectangle/Square for a laptop).
-              - Be decisive. If it has a clear geometric profile, use that instead of "Other".`,
+              1. Circle/Sphere/Torus -> Container 1. Round, circular, or ring-like profiles with NO sharp corners.
+              2. Square/Cube -> Container 2. 4 equal sides with 90-degree corners.
+              3. Triangle/Pyramid/Rectangle -> Container 3. 3 sides OR 4 unequal sides (like a laptop or phone).
+              4. Other -> Container 4. Stars, hexagons, or complex industrial parts.
+              
+              CRITICAL: Be extremely precise. Do NOT confuse a Triangle (sharp corners) with a Circle.
+              
+              Respond ONLY with a JSON object like this: 
+              {"shape": "Circle", "color": "Red", "container": "1", "reason": "The object is a red round part with no vertices."}`,
             },
             {
               type: "image_url",
@@ -107,12 +109,12 @@ async function classifyWithOpenCV(imagePath: string): Promise<{ shape: string; c
         const result = JSON.parse(dataString);
         if (result.error) return reject(new Error(result.error));
 
-        // Map shape to container number
-        let containerNumber = "4"; // Default for Other
+        // Map shape to container number (Circle=1, Square=2, Triangle/Rectangle=3, Other=4)
+        let containerNumber = "4"; 
         const shape = result.detected_shape;
         if (shape === "Circle") containerNumber = "1";
         else if (shape === "Square") containerNumber = "2";
-        else if (shape === "Triangle") containerNumber = "3";
+        else if (shape === "Triangle" || shape === "Rectangle") containerNumber = "3";
 
         resolve({
           shape: shape,
@@ -156,11 +158,13 @@ export async function registerRoutes(
 
     try {
       let classification;
+      let engine = "AI Vision";
       try {
         classification = await classifyWithAI(newPath);
       } catch (aiError) {
         console.warn("AI failed, falling back to OpenCV:", aiError);
         classification = await classifyWithOpenCV(newPath);
+        engine = "OpenCV (Fallback)";
       }
 
       const stored = await storage.createClassification({
@@ -169,7 +173,7 @@ export async function registerRoutes(
         detectedColor: classification.color,
         category: classification.category, // This now stores the container number (1, 2, 3, 4)
         reason: classification.reason,
-        confidence: "Processed by AI Vision"
+        confidence: engine
       });
 
       res.status(201).json(stored);
