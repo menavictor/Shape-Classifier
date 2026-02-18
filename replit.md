@@ -2,7 +2,7 @@
 
 ## Overview
 
-ShapeSortAI is a full-stack web application that classifies geometric shapes in uploaded images. Users upload an image, and the system analyzes it using OpenAI's GPT-4o vision model (with a Python/OpenCV fallback) to detect the primary shape (Circle, Square, Triangle, or Other) and assigns a corresponding container color (Green, Blue, Yellow, Red). Results are stored in a PostgreSQL database and displayed in a dashboard UI.
+ShapeSortAI is a full-stack web application that classifies geometric shapes in uploaded images using purely local OpenCV computer vision — no external AI APIs needed. Users upload an image (including real camera photos of 3D objects), and the system detects the primary shape (Circle, Square, Triangle, Rectangle, or Other) and assigns a numbered container (1-4). Results are stored in a PostgreSQL database and displayed in a dashboard UI.
 
 ## User Preferences
 
@@ -25,8 +25,12 @@ Preferred communication style: Simple, everyday language.
 - **Framework**: Express 5 on Node.js, written in TypeScript, run with `tsx`
 - **API Design**: RESTful API at `/api/classifications` (GET for list, POST with FormData for upload)
 - **File Uploads**: Multer middleware handling image uploads to an `uploads/` directory (5MB limit)
-- **AI Classification**: Primary classification via OpenAI GPT-4o vision API (sends base64 image, expects JSON response with shape/color/confidence). Uses Replit AI Integrations environment variables (`AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`)
-- **Python Fallback**: A Python script (`server/lib/image_processor.py`) using OpenCV for shape detection via HoughCircles and contour analysis, spawned as a child process
+- **Shape Classification**: Purely local OpenCV computer vision via Python script (`server/lib/image_processor.py`), spawned as a child process. Uses smart multi-strategy detection:
+  - 5 segmentation strategies (adaptive Gaussian/Mean, Otsu, Canny, GrabCut)
+  - Ensemble voting system across multiple metrics (circularity, fill ratios, vertex counts, Hough circle confirmation)
+  - Contour-mask color sampling with HSV classification
+  - Best-contour scoring by solidity, area, and centrality
+  - Container mapping: Circle=1, Square=2, Triangle/Rectangle=3, Other=4
 - **Static Serving**: In production, serves built client assets from `dist/public`; in development, uses Vite dev server with HMR
 - **Build**: Custom build script using esbuild for server bundling and Vite for client bundling
 
