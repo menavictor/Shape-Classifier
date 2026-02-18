@@ -13,18 +13,18 @@ def analyze_shape(image_path):
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # 1. Circle Detection using HoughCircles (highly specific for circles)
-    blurred = cv2.GaussianBlur(gray, (9, 9), 0)
+    # 1. Circle Detection using HoughCircles (optimized for speed)
+    blurred = cv2.GaussianBlur(gray, (7, 7), 0)
     
-    # Adjusted parameters for HoughCircles to be more sensitive to various circle sizes
+    # Adjusted parameters for faster and smarter circle detection
     circles = cv2.HoughCircles(
         blurred, 
         cv2.HOUGH_GRADIENT, 
         dp=1.2, 
-        minDist=50,
-        param1=50, 
-        param2=30, 
-        minRadius=10, 
+        minDist=60,
+        param1=40, 
+        param2=25, 
+        minRadius=15, 
         maxRadius=0
     )
 

@@ -57,7 +57,10 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
               3. Assign it to a container number: 1 for Circle/Sphere/Torus (any circular, round, or ring-like profile), 2 for Square/Cube/Box, 3 for Triangle/Pyramid/Rectangle, 4 for Other.
               4. Provide a professional reason for this classification based on its visual features.
               
-              CRITICAL: If the object is a donut, ring, or torus, classify it as "Circle" and assign it to container 1.`,
+              DETECTION GUIDELINES:
+              - A donut, ring, or torus should be classified as "Circle" and assigned to container 1.
+              - Real-world objects (like a laptop, book, or box) should be mapped to their closest geometric equivalent (e.g., Square/Cube for a box, Rectangle/Square for a laptop).
+              - Be decisive. If it has a clear geometric profile, use that instead of "Other".`,
             },
             {
               type: "image_url",
