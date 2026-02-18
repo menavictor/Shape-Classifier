@@ -52,13 +52,12 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
             {
               type: "text",
               text: `Analyze the object in this image (could be a 2D shape or a 3D real-world object from a mobile camera). 
-              1. Detect its primary geometric profile or 3D shape ('Circle/Sphere', 'Square/Cube', 'Triangle/Pyramid', or 'Other').
+              1. Detect its primary geometric profile or 3D shape ('Circle/Sphere/Torus', 'Square/Cube', 'Triangle/Pyramid', or 'Other').
               2. Detect its primary color.
-              3. Assign it to a container number: 1 for Circle/Sphere, 2 for Square/Cube/Box, 3 for Triangle/Pyramid/Rectangle, 4 for Other.
+              3. Assign it to a container number: 1 for Circle/Sphere/Torus (any circular, round, or ring-like profile), 2 for Square/Cube/Box, 3 for Triangle/Pyramid/Rectangle, 4 for Other.
               4. Provide a professional reason for this classification based on its visual features.
               
-              Respond ONLY with a JSON object like this: 
-              {"shape": "Circle", "color": "Red", "container": "1", "reason": "The object is a red spherical part with a clear circular profile."}`,
+              CRITICAL: If the object is a donut, ring, or torus, classify it as "Circle" and assign it to container 1.`,
             },
             {
               type: "image_url",
