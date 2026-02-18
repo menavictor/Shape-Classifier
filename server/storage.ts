@@ -43,8 +43,13 @@ export class FileStorage implements IStorage {
 
   async createClassification(insertClassification: InsertClassification): Promise<Classification> {
     const classification: Classification = {
-      ...insertClassification,
       id: this.currentId++,
+      imageUrl: insertClassification.imageUrl,
+      detectedShape: insertClassification.detectedShape,
+      detectedColor: insertClassification.detectedColor,
+      category: insertClassification.category,
+      reason: insertClassification.reason,
+      confidence: insertClassification.confidence ?? null,
       createdAt: new Date(),
     };
     this.classifications.push(classification);
