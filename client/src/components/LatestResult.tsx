@@ -75,7 +75,11 @@ export function LatestResult({ result }: LatestResultProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+             <div>
+               <div className="text-xs text-muted-foreground font-mono mb-1">COLOR</div>
+               <div className="text-sm font-medium">{result.detectedColor}</div>
+             </div>
              <div>
                <div className="text-xs text-muted-foreground font-mono mb-1">CONFIDENCE</div>
                <div className="text-sm font-medium">{result.confidence || "98.5%"}</div>

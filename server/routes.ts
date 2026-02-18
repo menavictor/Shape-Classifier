@@ -153,11 +153,11 @@ export async function registerRoutes(
         classification = await classifyWithOpenCV(newPath);
       }
 
-      const stored = await storage.createClassification({
+        const stored = await storage.createClassification({
         imageUrl: `/uploads/${newFilename}`,
         detectedShape: classification.shape,
         detectedColor: classification.color,
-        category: classification.category,
+        category: classification.color, // Using color as a base for category logic
         reason: classification.reason,
         confidence: "Processed"
       });

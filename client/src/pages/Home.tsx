@@ -121,9 +121,10 @@ export default function Home() {
                 <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-medium border-b border-border">
                   <tr>
                     <th className="px-6 py-4 w-[100px]">Image</th>
-                    <th className="px-6 py-4">Shape Detected</th>
+                    <th className="px-6 py-4">Shape</th>
+                    <th className="px-6 py-4">Color</th>
                     <th className="px-6 py-4">Container</th>
-                    <th className="px-6 py-4">Confidence</th>
+                    <th className="px-6 py-4">Details</th>
                     <th className="px-6 py-4 text-right">Timestamp</th>
                   </tr>
                 </thead>
@@ -162,23 +163,26 @@ export default function Home() {
                         <td className="px-6 py-4">
                           <ShapeBadge shape={item.detectedShape} />
                         </td>
+                        <td className="px-6 py-4 font-medium">
+                          {item.detectedColor}
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <span 
                               className="w-3 h-3 rounded-full shadow-sm"
                               style={{ 
                                 backgroundColor: 
-                                  item.containerColor === 'Green' ? 'var(--container-green)' :
-                                  item.containerColor === 'Blue' ? 'var(--container-blue)' :
-                                  item.containerColor === 'Yellow' ? 'var(--container-yellow)' :
-                                  item.containerColor === 'Red' ? 'var(--container-red)' : 'gray'
+                                  item.detectedColor === 'Green' ? 'var(--container-green)' :
+                                  item.detectedColor === 'Blue' ? 'var(--container-blue)' :
+                                  item.detectedColor === 'Yellow' || item.detectedColor === 'Orange/Yellow' ? 'var(--container-yellow)' :
+                                  item.detectedColor === 'Red' ? 'var(--container-red)' : 'gray'
                               }}
                             />
-                            <span className="font-medium">{item.containerColor}</span>
+                            <span className="font-medium">{item.detectedColor}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 font-mono text-xs text-muted-foreground">
-                          {item.confidence || "99.2%"}
+                        <td className="px-6 py-4 text-xs text-muted-foreground max-w-xs truncate">
+                          {item.reason}
                         </td>
                         <td className="px-6 py-4 text-right text-muted-foreground font-mono text-xs">
                           {new Date(item.createdAt || "").toLocaleString()}
