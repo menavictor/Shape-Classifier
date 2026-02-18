@@ -81,25 +81,30 @@ def analyze_shape(image_path):
             num_vertices = len(approx)
             
             # Lowered circularity threshold and increased vertex tolerance for circles
-            if circularity > 0.6 or num_vertices > 7:
+            if circularity > 0.8 or num_vertices > 8:
                 shape = "Circle"
                 color = "Green"
                 confidence_msg = f"Contour circularity: {circularity:.2f}, Vertices: {num_vertices}"
-            elif 3 <= num_vertices <= 6:
+            elif 4 <= num_vertices <= 4:
                 x, y, w, h = cv2.boundingRect(approx)
+                aspect_ratio = float(w)/h if h > 0 else 0
                 solidity = float(area) / (w * h) if (w * h) > 0 else 0
-                if solidity > 0.8:
+                if solidity > 0.9 and 0.8 <= aspect_ratio <= 1.2:
                     shape = "Square"
                     color = "Blue"
-                    confidence_msg = f"Solid quad detected (Solidity: {solidity:.2f})"
-                elif num_vertices == 3:
-                    shape = "Triangle"
+                    confidence_msg = f"Solid square detected (Solidity: {solidity:.2f}, AR: {aspect_ratio:.2f})"
+                else:
+                    shape = "Rectangle"
                     color = "Yellow"
-                    confidence_msg = "Triangle vertices detected"
+                    confidence_msg = f"Polygon detected with {num_vertices} vertices"
+            elif num_vertices == 3:
+                shape = "Triangle"
+                color = "Yellow"
+                confidence_msg = "Triangle vertices detected"
 
     return {
         "detected_shape": shape,
-        "container_color": color,
+        "color": color,
         "confidence": confidence_msg
     }
 

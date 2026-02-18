@@ -54,11 +54,11 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
               text: `Analyze the main object in this image. 
               1. Detect its primary geometric shape ('Circle', 'Square', 'Triangle', or 'Other').
               2. Detect its primary color.
-              3. Assign it to a business category (e.g., 'Electronics', 'Mechanical Parts', 'Packaging', 'Household').
+              3. Assign it to a container number: 1 for Circle, 2 for Square/Box, 3 for Triangle/Rectangle, 4 for Other.
               4. Provide a professional reason for this classification.
               
               Respond ONLY with a JSON object like this: 
-              {"shape": "Circle", "color": "Red", "category": "Mechanical Parts", "reason": "The object is a red industrial washer with a clear circular profile."}`,
+              {"shape": "Circle", "color": "Red", "container": "1", "reason": "The object is a red industrial washer with a clear circular profile."}`,
             },
             {
               type: "image_url",
@@ -79,7 +79,7 @@ async function classifyWithAI(imagePath: string): Promise<{ shape: string; color
     return {
       shape: result.shape || "Other",
       color: result.color || "Unknown",
-      category: result.category || "General",
+      category: result.container || "4",
       reason: result.reason || "Processed by AI vision system.",
     };
   } catch (error) {
@@ -161,13 +161,13 @@ export async function registerRoutes(
         classification = await classifyWithOpenCV(newPath);
       }
 
-        const stored = await storage.createClassification({
+      const stored = await storage.createClassification({
         imageUrl: `/uploads/${newFilename}`,
         detectedShape: classification.shape,
         detectedColor: classification.color,
-        category: classification.color, // Using color as a base for category logic
+        category: classification.category, // This now stores the container number (1, 2, 3, 4)
         reason: classification.reason,
-        confidence: "Processed"
+        confidence: "Processed by AI Vision"
       });
 
       res.status(201).json(stored);
