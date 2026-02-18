@@ -20,36 +20,63 @@ if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads");
 }
 
-async function classifyWithOpenCV(imagePath: string): Promise<{ shape: string; color: string; category: string; reason: string }> {
-  return new Promise((resolve, reject) => {
-    const pythonProcess = spawn("python3", ["server/lib/image_processor.py", imagePath]);
-    let dataString = "";
-    let errorString = "";
+import OpenAI from "openai";
 
-    pythonProcess.stdout.on("data", (data) => { dataString += data.toString(); });
-    pythonProcess.stderr.on("data", (data) => { errorString += data.toString(); });
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
 
-    pythonProcess.on("close", (code) => {
-      if (code !== 0) {
-        console.error("OpenCV stderr:", errorString);
-        return reject(new Error(`OpenCV process failed: ${errorString}`));
+async function classifyWithAI(imagePath: string): Promise<{ shape: string; color: string; category: string; reason: string }> {
+  const imageBuffer = fs.readFileSync(imagePath);
+  const base64Image = imageBuffer.toString("base64");
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "system",
+        content: `You are a product sorting expert. Classify the primary object in the image into one of these shapes:
+- Circle (includes Spheres, Torus, round objects) -> Container 1
+- Square (includes Cubes) -> Container 2
+- Triangle (includes Pyramids) -> Container 3
+- Rectangle -> Container 3
+- Other (Hexagons, Pentagons, complex shapes) -> Container 4
+
+Return strictly JSON format:
+{
+  "shape": "Circle" | "Square" | "Triangle" | "Rectangle" | "Other",
+  "color": "string",
+  "category": "1" | "2" | "3" | "4",
+  "reason": "short explanation of detection"
+}`
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Classify this object for sorting into a numbered container."
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:image/jpeg;base64,${base64Image}`
+            }
+          }
+        ]
       }
-      try {
-        const result = JSON.parse(dataString.trim());
-        if (result.error) return reject(new Error(result.error));
-
-        resolve({
-          shape: result.detected_shape || "Other",
-          color: result.color || "Unknown",
-          category: result.container || "4",
-          reason: result.confidence || "Processed using local computer vision."
-        });
-      } catch (e) {
-        console.error("Failed to parse OpenCV output:", dataString);
-        reject(new Error("Failed to parse detection result"));
-      }
-    });
+    ],
+    response_format: { type: "json_object" }
   });
+
+  const result = JSON.parse(response.choices[0].message.content || "{}");
+  return {
+    shape: result.shape || "Other",
+    color: result.color || "Unknown",
+    category: result.category || "4",
+    reason: result.reason || "Analyzed using advanced AI vision."
+  };
 }
 
 export async function registerRoutes(
@@ -80,7 +107,7 @@ export async function registerRoutes(
     }
 
     try {
-      const classification = await classifyWithOpenCV(newPath);
+      const classification = await classifyWithAI(newPath);
 
       const stored = await storage.createClassification({
         imageUrl: `/uploads/${newFilename}`,
@@ -88,7 +115,7 @@ export async function registerRoutes(
         detectedColor: classification.color,
         category: classification.category,
         reason: classification.reason,
-        confidence: "OpenCV Local Detection"
+        confidence: "AI Vision (GPT-4o)"
       });
 
       res.status(201).json(stored);
