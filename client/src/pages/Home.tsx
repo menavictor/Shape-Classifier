@@ -8,15 +8,17 @@ import { Loader2, LayoutDashboard, History, Zap, Settings2 } from "lucide-react"
 import { motion } from "framer-motion";
 
 export default function Home() {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { data: classifications, isLoading } = useClassifications();
   const { mutateAsync: uploadImage, isPending: isUploading } = useUploadClassification();
   const { toast } = useToast();
   
-  // Track the most recently uploaded item separately to show the big card
-  // Or just use the first item of the list if sorted by date desc
   const latestClassification = classifications?.[0]; 
 
   const handleFileSelect = async (file: File) => {
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+
     try {
       await uploadImage(file);
       toast({
@@ -30,6 +32,9 @@ export default function Home() {
         description: error instanceof Error ? error.message : "Failed to upload",
         variant: "destructive",
       });
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+      setPreviewUrl(null);
     }
   };
 
@@ -76,7 +81,7 @@ export default function Home() {
               </h1>
               <p className="text-muted-foreground text-base md:text-lg max-w-xl">
                 Upload product images for instant shape detection and container assignment. 
-                Powered by OpenCV geometry analysis.
+                Powered by AI Vision analysis.
               </p>
             </div>
             
@@ -84,13 +89,17 @@ export default function Home() {
           </div>
 
           <div className="lg:col-span-7 w-full overflow-hidden">
-             {latestClassification ? (
+             {(latestClassification || previewUrl) ? (
                <div className="space-y-4">
                  <h2 className="text-lg font-semibold flex items-center gap-2">
                    <Zap className="w-4 h-4 text-primary" />
                    Live Analysis Result
                  </h2>
-                 <LatestResult result={latestClassification} />
+                 <LatestResult 
+                   result={latestClassification} 
+                   previewUrl={previewUrl || undefined}
+                   isUploading={isUploading}
+                 />
                </div>
              ) : (
                <div className="h-full min-h-[300px] md:min-h-[400px] flex flex-col items-center justify-center bg-muted/20 border-2 border-dashed border-muted rounded-2xl p-6 md:p-8 text-center">
